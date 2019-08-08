@@ -6,7 +6,9 @@
 
 class Dicom_render : public wxGLCanvas
 {
-  int cur_image = 0;
+  int x = 0, y = 0, z = 0;
+  float angle_xz = 0.0f, angle_yz = 0.0f, angle_xy = 0.0f;
+
   wxGLContext* gl_context;
   Dicom_reader* dicom_reader;
   GLuint tex;
@@ -14,6 +16,13 @@ class Dicom_render : public wxGLCanvas
 public:
   Dicom_render(wxFrame* parent, int* args, Dicom_reader* dicom_reader);
   virtual ~Dicom_render();
+
+  int& get_x();
+  int& get_y();
+  int& get_z();
+  float& get_angle_xy();
+  float& get_angle_xz();
+  float& get_angle_yz();
 
   void init();
 

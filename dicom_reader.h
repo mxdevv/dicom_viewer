@@ -25,6 +25,10 @@ class Dicom_reader {
   void load_image(const imebra::Image* image,
       const imebra::ReadingDataHandlerNumeric* data_handler, int i);
 public:
+  int get_width();
+  int get_height();
+  int get_length();
+
   void load(const char* path);
 
   friend class Dicom_render;

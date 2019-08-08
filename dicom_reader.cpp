@@ -3,6 +3,10 @@
 
 #include "dicom_reader.h"
 
+int Dicom_reader::get_width() { return images[0].width; }
+int Dicom_reader::get_height() { return images[0].height; }
+int Dicom_reader::get_length() { return images.size(); }
+
 void Dicom_reader::load(const char* path)
 {
   int images_len;
