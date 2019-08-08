@@ -9,7 +9,7 @@ class Dicom_render : public wxGLCanvas
   int cur_image = 0;
   wxGLContext* gl_context;
   Dicom_reader* dicom_reader;
-  GLuint* texs;
+  std::vector<GLuint> texs;
 
 public:
   Dicom_render(wxFrame* parent, int* args, Dicom_reader* dicom_reader);

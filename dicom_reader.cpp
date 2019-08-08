@@ -5,6 +5,8 @@
 
 void Dicom_reader::load(const char* path)
 {
+  int images_len;
+
   if (std::filesystem::is_regular_file(path)) {
     images_len = 1;
     std::cerr << "Open " << images_len << " file" << std::endl;
@@ -12,9 +14,7 @@ void Dicom_reader::load(const char* path)
     std::unique_ptr<imebra::DataSet>
         imebra_data_set (imebra::CodecFactory::load(path));
 
-    heights = new int[images_len];
-    widths = new int[images_len];
-    images = new GLuint*[images_len];
+    images.reserve(images_len);
 
     std::unique_ptr<imebra::Image>
         image (imebra_data_set->getImage(0));
@@ -23,12 +23,10 @@ void Dicom_reader::load(const char* path)
 
     std::cerr << "color_space: " << color_space << std::endl;
 
-    widths[0] = image->getWidth();
-    heights[0] = image->getHeight();
-    images[0] = new GLuint[widths[0] * heights[0]];
+    images.emplace_back(image->getWidth(), image->getHeight());
 
-    std::cerr << "width: " << widths[0] << ", height: " << heights[0]
-        << std::endl;
+    std::cerr << "width: " << images[0].width << ", height: "
+        << images[0].height << std::endl;
 
     std::unique_ptr<imebra::ReadingDataHandlerNumeric>
         data_handler (image->getReadingDataHandler());
@@ -49,9 +47,7 @@ void Dicom_reader::load(const char* path)
 
     std::sort(paths.begin(), paths.end());
 
-    heights = new int[images_len];
-    widths = new int[images_len];
-    images = new GLuint*[images_len];
+    images.reserve(images_len);
 
     for(int i = 0; i < images_len; i++) {
 
@@ -65,12 +61,10 @@ void Dicom_reader::load(const char* path)
 
       std::cerr << "color_space: " << color_space << std::endl;
 
-      widths[i] = image->getWidth();
-      heights[i] = image->getHeight();
-      images[i] = new GLuint[widths[i] * heights[i]];
+      images.emplace_back(image->getWidth(), image->getHeight());
 
-      std::cerr << "width: " << widths[i] << ", height: " << heights[i]
-          << std::endl;
+      std::cerr << "width: " << images[i].width << ", height: "
+          << images[i].height << std::endl;
 
       std::unique_ptr<imebra::ReadingDataHandlerNumeric>
           data_handler (image->getReadingDataHandler());
@@ -80,7 +74,7 @@ void Dicom_reader::load(const char* path)
   }
   std::cerr << "-----------------------------" << std::endl;
   std::cerr << "Images size: "
-      << images_len * widths[0] * heights[0] * 4.0 / 1024.0 / 1024.0
+      << images_len * images[0].width * images[0].height * 4.0 / 1024.0 / 1024.0
       << "MB" << std::endl;
 }
 
@@ -91,11 +85,13 @@ void Dicom_reader::load_image(const imebra::Image* image,
   t luminance, r, g, b, j = 0;
   if (imebra::ColorTransformsFactory::isMonochrome(image->getColorSpace())) {
     std::cerr << "Image size: " <<
-        widths[i] * heights[i] * 4.0 / 1024.0 / 1024.0 << "MB" << std::endl;
-    for(t y = 0; y < heights[i]; y++) {
-      for(t x = 0; x < widths[i]; x++) {
-        luminance = data_handler->getSignedLong(y * widths[0] + x);
-        images[i][j++] = luminance * 10'000'000; // 10 млн или ничего не видно
+        images[i].width * images[i].height * 4.0 / 1024.0 / 1024.0 << "MB"
+        << std::endl;
+    for(t y = 0; y < images[i].height; y++) {
+      for(t x = 0; x < images[i].width; x++) {
+        luminance = data_handler->getSignedLong(y * images[i].width + x);
+        /* 10 млн или ничего не видно */
+        images[i].data[j++] = luminance * 10'000'000;
       }
     }
   } else {

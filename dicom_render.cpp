@@ -80,9 +80,9 @@ void Dicom_render::render(wxPaintEvent& evt)
 
 void Dicom_render::gen_texs()
 {
-  texs = new GLuint[dicom_reader->images_len];
+  texs.resize(dicom_reader->images.size());
 
-  for(int i = 0; i < dicom_reader->images_len; i++) {
+  for(int i = 0; i < dicom_reader->images.size(); i++) {
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // что это?
 
     glGenTextures(1, &texs[i]);
@@ -91,9 +91,9 @@ void Dicom_render::gen_texs()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, dicom_reader->widths[i],
-        dicom_reader->heights[i], 0, GL_LUMINANCE, GL_UNSIGNED_INT,
-        dicom_reader->images[i]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, dicom_reader->images[i].width,
+        dicom_reader->images[i].height, 0, GL_LUMINANCE, GL_UNSIGNED_INT,
+        dicom_reader->images[i].data);
   }
 }
 
