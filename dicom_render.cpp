@@ -46,7 +46,7 @@ void Dicom_render::init()
 
 void Dicom_render::resized(wxSizeEvent& evt)
 {
-  ;
+  glViewport(0, 0, getWidth(), getHeight());
 }
 
 int Dicom_render::getWidth()
@@ -70,7 +70,7 @@ void Dicom_render::render(wxPaintEvent& evt)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  draw_tex(cur_image);
+  draw_tex();
 
   glFlush();
   SwapBuffers();
@@ -78,31 +78,27 @@ void Dicom_render::render(wxPaintEvent& evt)
   Refresh();
 }
 
-void Dicom_render::gen_texs()
+void Dicom_render::gen_tex()
 {
-  texs.resize(dicom_reader->images.size());
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // что это?
 
-  for(int i = 0; i < dicom_reader->images.size(); i++) {
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // что это?
+  glGenTextures(1, &tex);
+  glBindTexture(GL_TEXTURE_2D, tex);
 
-    glGenTextures(1, &texs[i]);
-    glBindTexture(GL_TEXTURE_2D, texs[i]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, dicom_reader->images[i].width,
-        dicom_reader->images[i].height, 0, GL_LUMINANCE, GL_UNSIGNED_INT,
-        dicom_reader->images[i].data);
-  }
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, dicom_reader->images[cur_image].width,
+      dicom_reader->images[cur_image].height, 0, GL_LUMINANCE, GL_UNSIGNED_INT,
+      dicom_reader->images[cur_image].data);
 }
 
-void Dicom_render::draw_tex(int i)
+void Dicom_render::draw_tex()
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_TEXTURE_2D);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-  glBindTexture(GL_TEXTURE_2D, texs[i]);
+  glBindTexture(GL_TEXTURE_2D, tex);
 
   glPushMatrix();
 

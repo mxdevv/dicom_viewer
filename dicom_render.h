@@ -9,7 +9,7 @@ class Dicom_render : public wxGLCanvas
   int cur_image = 0;
   wxGLContext* gl_context;
   Dicom_reader* dicom_reader;
-  std::vector<GLuint> texs;
+  GLuint tex;
 
 public:
   Dicom_render(wxFrame* parent, int* args, Dicom_reader* dicom_reader);
@@ -17,8 +17,8 @@ public:
 
   void init();
 
-  void gen_texs();
-  void draw_tex(int i);
+  void gen_tex();
+  void draw_tex();
 
   void resized(wxSizeEvent& evt);
 

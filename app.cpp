@@ -20,9 +20,11 @@ void App::keyPressed(wxKeyEvent& evt)
   switch(evt.GetKeyCode()) {
     case WXK_UP:
       dicom_render->cur_image++;
+      dicom_render->gen_tex();
       break;
     case WXK_DOWN:
       dicom_render->cur_image--;
+      dicom_render->gen_tex();
       break;
   }
 }
@@ -49,7 +51,7 @@ bool App::OnInit()
 
   dicom_render->init();
   dicom_reader.load("samples/lee/brain_dicom/");
-  dicom_render->gen_texs();
+  dicom_render->gen_tex();
 
   return true;
 }
