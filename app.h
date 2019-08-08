@@ -14,11 +14,9 @@ class App : public wxApp
   Dicom_render* dicom_render;
 
 public:
-  void keyPressed(wxKeyEvent& event);
+  void keyPressed(wxKeyEvent& evt);
 
   DECLARE_EVENT_TABLE();
-
-  friend Dicom_render;
 };
 
 BEGIN_EVENT_TABLE(App, wxApp)

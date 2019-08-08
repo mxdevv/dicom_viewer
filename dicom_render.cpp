@@ -70,12 +70,54 @@ void Dicom_render::render(wxPaintEvent& evt)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  dicom_reader->draw_tex(cur_image);
+  draw_tex(cur_image);
 
   glFlush();
   SwapBuffers();
 
   Refresh();
+}
+
+void Dicom_render::gen_texs()
+{
+  texs = new GLuint[dicom_reader->images_len];
+
+  for(int i = 0; i < dicom_reader->images_len; i++) {
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // что это?
+
+    glGenTextures(1, &texs[i]);
+    glBindTexture(GL_TEXTURE_2D, texs[i]);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, dicom_reader->widths[i],
+        dicom_reader->heights[i], 0, GL_LUMINANCE, GL_UNSIGNED_INT,
+        dicom_reader->images[i]);
+  }
+}
+
+void Dicom_render::draw_tex(int i)
+{
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_TEXTURE_2D);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+  glBindTexture(GL_TEXTURE_2D, texs[i]);
+
+  glPushMatrix();
+
+  glBegin(GL_QUADS);
+
+  glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 0.0f, 0.0f);
+  glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 1.0f, 0.0f);
+  glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, 0.0f);
+  glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 0.0f, 0.0f);
+
+  glEnd();
+
+  glPopMatrix();
+
+  glDisable(GL_TEXTURE_2D);
 }
 
 #endif

@@ -6,16 +6,19 @@
 
 class Dicom_render : public wxGLCanvas
 {
-public: // здесь должно быть private, no 'friend App' не работает о_0
   int cur_image = 0;
   wxGLContext* gl_context;
   Dicom_reader* dicom_reader;
+  GLuint* texs;
 
 public:
   Dicom_render(wxFrame* parent, int* args, Dicom_reader* dicom_reader);
   virtual ~Dicom_render();
 
   void init();
+
+  void gen_texs();
+  void draw_tex(int i);
 
   void resized(wxSizeEvent& evt);
 
@@ -26,7 +29,7 @@ public:
 
   DECLARE_EVENT_TABLE()
 
-  //friend App; // не видит App, почему-то
+  friend class App;
 };
 
 BEGIN_EVENT_TABLE(Dicom_render, wxGLCanvas)

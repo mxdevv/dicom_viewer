@@ -15,9 +15,9 @@
 #include "dicom_reader.cpp"
 #include "dicom_render.cpp"
 
-void App::keyPressed(wxKeyEvent& event)
+void App::keyPressed(wxKeyEvent& evt)
 {
-  switch(event.GetKeyCode()) {
+  switch(evt.GetKeyCode()) {
     case WXK_UP:
       dicom_render->cur_image++;
       break;
@@ -49,7 +49,7 @@ bool App::OnInit()
 
   dicom_render->init();
   dicom_reader.load("samples/lee/brain_dicom/");
-  dicom_reader.gen_texs();
+  dicom_render->gen_texs();
 
   return true;
 }
