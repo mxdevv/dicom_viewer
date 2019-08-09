@@ -1,9 +1,8 @@
+#include <GL/glew.h>
+
 #include <wx/wx.h>
 #include <wx/sizer.h>
 #include <wx/glcanvas.h>
-
-#include <GL/glu.h>
-#include <GL/gl.h>
 
 #include <imebra/imebra.h>
 
@@ -136,7 +135,8 @@ bool App::OnInit()
   frame = new wxFrame((wxFrame *)NULL, -1,  wxT("osdicom"),
                       wxDefaultPosition, wxSize(800, 600));
 
-  int args[] = {WX_GL_RGBA, WX_GL_DOUBLEBUFFER, WX_GL_DEPTH_SIZE, 16, 0};
+  int args[] = {WX_GL_CORE_PROFILE, WX_GL_RGBA, WX_GL_DOUBLEBUFFER,
+      WX_GL_DEPTH_SIZE, 16, 0};
   dicom_render = new Dicom_render((wxFrame*)frame, args, &dicom_reader);
 
   wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
@@ -194,6 +194,10 @@ bool App::OnInit()
   frame->Show();
 
   dicom_render->init();
+  dicom_render->load_vertex_shader();
+  dicom_render->load_fragment_shader();
+  dicom_render->link_and_compile_program();
+  dicom_render->VAO_VBO_init();
   dicom_render->gen_tex();
 
   return true;

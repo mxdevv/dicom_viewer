@@ -30,7 +30,9 @@ void Dicom_render::init()
 {
   SetCurrent(*gl_context);
 
-  glEnable(GL_BLEND);
+  glewInit();
+
+  /*glEnable(GL_BLEND);
   glDisable(GL_DEPTH_TEST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -45,7 +47,7 @@ void Dicom_render::init()
   glLoadIdentity();
   gluOrtho2D(0.0f, 1.0f, 0.0f, 1.0f);
   glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
+  glLoadIdentity();*/
   glViewport(0, 0, getWidth(), getHeight());
 
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -77,7 +79,8 @@ void Dicom_render::render(wxPaintEvent& evt)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  draw_tex();
+  //draw_tex();
+  draw_test();
 
   glFlush();
   SwapBuffers();
@@ -85,11 +88,90 @@ void Dicom_render::render(wxPaintEvent& evt)
   Refresh();
 }
 
+void Dicom_render::load_vertex_shader()
+{
+  shader_v = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(shader_v, 1, &shader_v_text, NULL);
+  glCompileShader(shader_v);
+
+  GLint success;
+  GLchar log[512];
+  glGetShaderiv(shader_v, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(shader_v, 512, NULL, log);
+    std::cerr << "Shader compilation error!\n" << log << std::endl;
+  }
+}
+
+void Dicom_render::load_fragment_shader()
+{
+  shader_f = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(shader_f, 1, &shader_f_text, NULL);
+  glCompileShader(shader_f);
+
+  GLint success;
+  GLchar log[512];
+  glGetShaderiv(shader_f, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(shader_f, 512, NULL, log);
+    std::cerr << "Shader compilation error!\n" << log << std::endl;
+  }
+}
+
+void Dicom_render::link_and_compile_program()
+{
+  program = glCreateProgram();
+  glAttachShader(program, shader_v);
+  glAttachShader(program, shader_f);
+  glLinkProgram(program);
+
+  GLint success;
+  GLchar log[512];
+  glGetProgramiv(program, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(program, 512, NULL, log);
+    std::cout << "Linking program fail!\n" << log << std::endl;
+  }
+  /*glDeleteShader(vertexShader);
+  glDeleteShader(fragmentShader);*/
+}
+
+void Dicom_render::VAO_VBO_init()
+{
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+
+  glBindVertexArray(VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+      GL_STATIC_DRAW);
+
+  // Position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
+      (GLvoid*)0);
+  glEnableVertexAttribArray(0);
+  // Color attribute
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
+      (GLvoid*)(3 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(1);
+  // TexCoord attribute
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
+      (GLvoid*)(6 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(2);
+
+  glBindVertexArray(0); // Unbind VAO
+}
+
 void Dicom_render::gen_tex()
 {
   int width = dicom_reader->get_width();
   int height = dicom_reader->get_height();
-  int lenght = dicom_reader->get_length();
+  int length = dicom_reader->get_length();
   GLuint* image = new GLuint[width * height];
 
   /* очень тяжёлый алгоритм, обязателен к оптимизации */
@@ -100,7 +182,7 @@ void Dicom_render::gen_tex()
 
       sx = width / 2;
       sy = height / 2;
-      sz = lenght / 2;
+      sz = length / 2;
 
       rx = ix + x - sx;
       ry = iy + y - sy;
@@ -126,7 +208,7 @@ void Dicom_render::gen_tex()
       rz += sz;
 
       if (rx > width || rx < 0 // x
-          || rz >= lenght || rz < 0 // z
+          || rz >= length || rz < 0 // z
           || ry > height || ry < 0) { // y
         image[li] = 0;
       } else {
@@ -168,6 +250,15 @@ void Dicom_render::draw_tex()
   glPopMatrix();
 
   glDisable(GL_TEXTURE_2D);
+}
+
+void Dicom_render::draw_test()
+{
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glUseProgram(program);
+  glBindVertexArray(VAO);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  glBindVertexArray(0);
 }
 
 #endif
