@@ -10,6 +10,10 @@ Dicom_render::Dicom_render(wxFrame* parent, int* args,
 {
   gl_context = new wxGLContext(this);
 
+  width = dicom_reader->get_width();
+  height = dicom_reader->get_height();
+  length = dicom_reader->get_length();
+
   // To avoid flashing on MSW
   SetBackgroundStyle(wxBG_STYLE_CUSTOM);
 }
@@ -79,8 +83,7 @@ void Dicom_render::render(wxPaintEvent& evt)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  //draw_tex();
-  draw_test();
+  draw();
 
   glFlush();
   SwapBuffers();
@@ -152,29 +155,29 @@ void Dicom_render::VAO_VBO_init()
       GL_STATIC_DRAW);
 
   // Position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat),
       (GLvoid*)0);
   glEnableVertexAttribArray(0);
   // Color attribute
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat),
       (GLvoid*)(3 * sizeof(GLfloat)));
   glEnableVertexAttribArray(1);
   // TexCoord attribute
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat),
       (GLvoid*)(6 * sizeof(GLfloat)));
   glEnableVertexAttribArray(2);
 
   glBindVertexArray(0); // Unbind VAO
 }
 
-void Dicom_render::gen_tex()
+/*void Dicom_render::gen_tex()
 {
   int width = dicom_reader->get_width();
   int height = dicom_reader->get_height();
   int length = dicom_reader->get_length();
   GLuint* image = new GLuint[width * height];
 
-  /* очень тяжёлый алгоритм, обязателен к оптимизации */
+  // очень тяжёлый алгоритм, обязателен к оптимизации
   int li, rx, ry, rz, sx, sy, sz, px, py, pz;
   for(int iy = 0; iy < height; iy++) {
     for(int ix = 0; ix < width; ix++) {
@@ -188,17 +191,17 @@ void Dicom_render::gen_tex()
       ry = iy + y - sy;
       rz = z      - sz;
 
-      /* angle_xy*/
+      // angle_xy
       px = rx; py = ry;
       rx = px * cos(angle_xy) - py * sin(angle_xy);
       ry = px * sin(angle_xy) + py * cos(angle_xy);
 
-      /* angle_xz */
+      // angle_xz
       px = rx; pz = rz;
       rx = px * cos(angle_xz) + pz * sin(angle_xz);
       rz = -px* sin(angle_xz) + pz * cos(angle_xz);
 
-      /* angle_yz */
+      // angle_yz
       py = ry; pz = rz;
       ry = py * cos(angle_yz) - pz * sin(angle_yz);
       rz = py * sin(angle_yz) + pz * cos(angle_yz);
@@ -217,7 +220,7 @@ void Dicom_render::gen_tex()
     }
   }
 
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // что это?
+  //glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // что это?
 
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D, tex);
@@ -227,35 +230,35 @@ void Dicom_render::gen_tex()
 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
       GL_LUMINANCE, GL_UNSIGNED_INT, image);
+}*/
+
+void Dicom_render::gen_tex_3d()
+{
+  glGenTextures(1, &tex_3d);
+  glBindTexture(GL_TEXTURE_3D, tex_3d);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+  float borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+  glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, dicom_reader->get_width(),
+      dicom_reader->get_height(), dicom_reader->get_length(), 0, GL_LUMINANCE,
+      GL_UNSIGNED_INT, dicom_reader->image_3d);
 }
 
-void Dicom_render::draw_tex()
+void Dicom_render::draw()
 {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_TEXTURE_2D);
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-  glBindTexture(GL_TEXTURE_2D, tex);
+  static GLuint texMove_location = glGetUniformLocation(program, "texOffset");
+  static GLuint texRotate_location = glGetUniformLocation(program, "texRotate");
 
-  glPushMatrix();
-
-  glBegin(GL_QUADS);
-
-  glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 0.0f, 0.0f);
-  glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 1.0f, 0.0f);
-  glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, 0.0f);
-  glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 0.0f, 0.0f);
-
-  glEnd();
-
-  glPopMatrix();
-
-  glDisable(GL_TEXTURE_2D);
-}
-
-void Dicom_render::draw_test()
-{
-  glBindTexture(GL_TEXTURE_2D, tex);
+  glBindTexture(GL_TEXTURE_3D, tex_3d);
   glUseProgram(program);
+  glUniform3f(texMove_location, (float)x / width, (float)y / height, 
+      (float)z / length);
+  glUniform3f(texRotate_location, angle_xy / 180.0f * M_PI,
+      angle_yz / 180.0f * M_PI, angle_xz / 180.0f * M_PI);
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);

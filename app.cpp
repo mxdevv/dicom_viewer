@@ -26,37 +26,31 @@ Fn_slider::Fn_slider(wxWindow *parent, wxWindowID id, int value, int minValue,
 void slider_set_x(int value)
 {
   app->dicom_render->get_x() = value;
-  app->dicom_render->gen_tex();
 }
 
 void slider_set_y(int value)
 {
   app->dicom_render->get_y() = value;
-  app->dicom_render->gen_tex();
 }
 
 void slider_set_z(int value)
 {
   app->dicom_render->get_z() = value;
-  app->dicom_render->gen_tex();
 }
 
 void slider_set_angle_xy(int value)
 {
-  app->dicom_render->get_angle_xy() = value / 180.0f * M_PI;
-  app->dicom_render->gen_tex();
+  app->dicom_render->get_angle_xy() = value;
 }
 
 void slider_set_angle_xz(int value)
 {
-  app->dicom_render->get_angle_xz() = value / 180.0f * M_PI;
-  app->dicom_render->gen_tex();
+  app->dicom_render->get_angle_xz() = value;
 }
 
 void slider_set_angle_yz(int value)
 {
-  app->dicom_render->get_angle_yz() = value / 180.0f * M_PI;
-  app->dicom_render->gen_tex();
+  app->dicom_render->get_angle_yz() = value;
 }
 
 void Fn_slider::scrolling(wxScrollEvent& evt)
@@ -72,51 +66,39 @@ void App::keyPressed(wxKeyEvent& evt)
     switch(uc) {
       case 'q': case 'Q':
         dicom_render->z++;
-        dicom_render->gen_tex();
         break;
       case 'a': case 'A':
         dicom_render->z--;
-        dicom_render->gen_tex();
         break;
       case 'w': case 'W':
         dicom_render->x--;
-        dicom_render->gen_tex();
         break;
       case 's': case 'S':
         dicom_render->x++;
-        dicom_render->gen_tex();
         break;
       case 'e': case 'E':
         dicom_render->y++;
-        dicom_render->gen_tex();
         break;
       case 'd': case 'D':
         dicom_render->y--;
-        dicom_render->gen_tex();
         break;
       case 'r': case 'R':
-        dicom_render->angle_xz += 0.01f;
-        dicom_render->gen_tex();
+        dicom_render->angle_xz += 1.0f;
         break;
       case 'f': case 'F':
-        dicom_render->angle_xz -= 0.01f;
-        dicom_render->gen_tex();
+        dicom_render->angle_xz -= 1.0f;
         break;
       case 't': case 'T':
-        dicom_render->angle_yz += 0.01f;
-        dicom_render->gen_tex();
+        dicom_render->angle_yz += 1.0f;
         break;
       case 'g': case 'G':
-        dicom_render->angle_yz -= 0.01f;
-        dicom_render->gen_tex();
+        dicom_render->angle_yz -= 1.0f;
         break;
       case 'y': case 'Y':
-        dicom_render->angle_xy += 0.01f;
-        dicom_render->gen_tex();
+        dicom_render->angle_xy += 1.0f;
         break;
       case 'h': case 'H':
-        dicom_render->angle_xy -= 0.01f;
-        dicom_render->gen_tex();
+        dicom_render->angle_xy -= 1.0f;
         break;
     }
   } else {
@@ -198,7 +180,7 @@ bool App::OnInit()
   dicom_render->load_fragment_shader();
   dicom_render->link_and_compile_program();
   dicom_render->VAO_VBO_init();
-  dicom_render->gen_tex();
+  dicom_render->gen_tex_3d();
 
   return true;
 }
