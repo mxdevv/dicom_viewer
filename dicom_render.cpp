@@ -87,18 +87,20 @@ void Dicom_render::render(wxPaintEvent& evt)
 
 void Dicom_render::gen_tex()
 {
-  Dicom_reader::Image image(dicom_reader->images[0].width,
-      dicom_reader->images[0].height);
+  int width = dicom_reader->get_width();
+  int height = dicom_reader->get_height();
+  int lenght = dicom_reader->get_length();
+  GLuint* image = new GLuint[width * height];
 
   /* очень тяжёлый алгоритм, обязателен к оптимизации */
   int li, rx, ry, rz, sx, sy, sz, px, py, pz;
-  for(int iy = 0; iy < image.height; iy++) {
-    for(int ix = 0; ix < image.width; ix++) {
-      li = iy * image.width + ix;
+  for(int iy = 0; iy < height; iy++) {
+    for(int ix = 0; ix < width; ix++) {
+      li = iy * width + ix;
 
-      sx = image.width / 2;
-      sy = image.height / 2;
-      sz = dicom_reader->images.size() / 2;
+      sx = width / 2;
+      sy = height / 2;
+      sz = lenght / 2;
 
       rx = ix + x - sx;
       ry = iy + y - sy;
@@ -123,12 +125,12 @@ void Dicom_render::gen_tex()
       ry += sy;
       rz += sz;
 
-      if (rx > image.width || rx < 0 // x
-          || rz >= dicom_reader->images.size() || rz < 0 // z
-          || ry > image.height || ry < 0) { // y
-        image.data[li] = 0;
+      if (rx > width || rx < 0 // x
+          || rz >= lenght || rz < 0 // z
+          || ry > height || ry < 0) { // y
+        image[li] = 0;
       } else {
-        image.data[li] = dicom_reader->images[rz].data[ry * image.width + rx];
+        image[li] = dicom_reader->image_3d[rz * width * height + ry * width + rx];
       }
     }
   }
@@ -141,8 +143,8 @@ void Dicom_render::gen_tex()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0,
-      GL_LUMINANCE, GL_UNSIGNED_INT, image.data);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
+      GL_LUMINANCE, GL_UNSIGNED_INT, image);
 }
 
 void Dicom_render::draw_tex()

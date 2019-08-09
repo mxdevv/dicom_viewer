@@ -4,23 +4,9 @@
 #include "dicom_render.h"
 
 class Dicom_reader {
-  struct Image {
-    int width, height;
-    GLuint* data = nullptr;
+  int width = 0, height = 0, length = 0;
 
-    Image(int width, int height)
-      : width(width), height(height)
-    {
-      data = new GLuint[width * height];
-    }
-
-    ~Image()
-    {
-      delete data;
-    }
-  };
-
-  std::vector<Image> images;
+  GLuint* image_3d = nullptr;
 
   void load_image(const imebra::Image* image,
       const imebra::ReadingDataHandlerNumeric* data_handler, int i);
