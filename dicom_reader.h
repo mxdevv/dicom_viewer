@@ -1,7 +1,7 @@
 #ifndef __DICOM_READER_H__
 #define __DICOM_READER_H__
 
-#include "dicom_render.h"
+#include "render.h"
 
 class Dicom_reader {
   int width = 0, height = 0, length = 0;
@@ -17,7 +17,7 @@ public:
 
   void load(const char* path);
 
-  friend class Dicom_render;
+  friend class Render;
 };
 
 #endif

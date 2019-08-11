@@ -1,9 +1,9 @@
-#ifndef __DICOM_RENDER_CPP__
-#define __DICOM_RENDER_CPP__
+#ifndef __RENDER_CPP__
+#define __RENDER_CPP__
 
-#include "dicom_render.h"
+#include "render.h"
 
-Dicom_render::Dicom_render(wxFrame* parent, int* args,
+Render::Render(wxFrame* parent, int* args,
     Dicom_reader* dicom_reader)
   : wxGLCanvas(parent, wxID_ANY, args, wxDefaultPosition, wxDefaultSize,
                wxFULL_REPAINT_ON_RESIZE), dicom_reader(dicom_reader)
@@ -18,29 +18,29 @@ Dicom_render::Dicom_render(wxFrame* parent, int* args,
   SetBackgroundStyle(wxBG_STYLE_CUSTOM);
 }
 
-Dicom_render::~Dicom_render()
+Render::~Render()
 {
   delete gl_context;
 }
 
-int& Dicom_render::get_x() { return x; }
-int& Dicom_render::get_y() { return y; }
-int& Dicom_render::get_z() { return z; }
-float& Dicom_render::get_angle_xy() { return angle_xy; }
-float& Dicom_render::get_angle_xz() { return angle_xz; }
-float& Dicom_render::get_angle_yz() { return angle_yz; }
+int& Render::get_x() { return x; }
+int& Render::get_y() { return y; }
+int& Render::get_z() { return z; }
+float& Render::get_angle_xy() { return angle_xy; }
+float& Render::get_angle_xz() { return angle_xz; }
+float& Render::get_angle_yz() { return angle_yz; }
 
-void Dicom_render::init()
+void Render::init()
 {
   SetCurrent(*gl_context);
 
   glewInit();
 
-  /*glEnable(GL_BLEND);
+  glEnable(GL_BLEND);
   glDisable(GL_DEPTH_TEST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+  /*glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
   glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
   glDisable(GL_POLYGON_SMOOTH);
   glDisable(GL_LINE_SMOOTH);
@@ -57,22 +57,22 @@ void Dicom_render::init()
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
-void Dicom_render::resized(wxSizeEvent& evt)
+void Render::resized(wxSizeEvent& evt)
 {
   glViewport(0, 0, getWidth(), getHeight());
 }
 
-int Dicom_render::getWidth()
+int Render::getWidth()
 {
   return GetSize().x;
 }
 
-int Dicom_render::getHeight()
+int Render::getHeight()
 {
   return GetSize().y;
 }
 
-void Dicom_render::render(wxPaintEvent& evt)
+void Render::render(wxPaintEvent& evt)
 {
   if(!IsShown()) return;
 
@@ -91,37 +91,32 @@ void Dicom_render::render(wxPaintEvent& evt)
   Refresh();
 }
 
-void Dicom_render::load_vertex_shader()
+void Render::compile_shader(GLuint& shader, GLuint SHADER_TYPE,
+    const GLchar* shader_text)
 {
-  shader_v = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(shader_v, 1, &shader_v_text, NULL);
-  glCompileShader(shader_v);
+  shader = glCreateShader(SHADER_TYPE);
+  glShaderSource(shader, 1, &shader_text, NULL);
+  glCompileShader(shader);
 
   GLint success;
   GLchar log[512];
-  glGetShaderiv(shader_v, GL_COMPILE_STATUS, &success);
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
-    glGetShaderInfoLog(shader_v, 512, NULL, log);
+    glGetShaderInfoLog(shader, 512, NULL, log);
     std::cerr << "Shader compilation error!\n" << log << std::endl;
   }
 }
 
-void Dicom_render::load_fragment_shader()
+void Render::compile_shaders()
 {
-  shader_f = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(shader_f, 1, &shader_f_text, NULL);
-  glCompileShader(shader_f);
-
-  GLint success;
-  GLchar log[512];
-  glGetShaderiv(shader_f, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(shader_f, 512, NULL, log);
-    std::cerr << "Shader compilation error!\n" << log << std::endl;
-  }
+  compile_shader(shader_v_2d, GL_VERTEX_SHADER, shader_v_2d_text);
+  compile_shader(shader_f_2d, GL_FRAGMENT_SHADER, shader_f_2d_text);
+  compile_shader(shader_v_3d, GL_VERTEX_SHADER, shader_v_3d_text);
+  compile_shader(shader_f_3d, GL_FRAGMENT_SHADER, shader_f_3d_text);
 }
 
-void Dicom_render::link_and_compile_program()
+void Render::compile_program(GLuint& program, const GLuint shader_v,
+    const GLuint shader_f)
 {
   program = glCreateProgram();
   glAttachShader(program, shader_v);
@@ -135,11 +130,17 @@ void Dicom_render::link_and_compile_program()
     glGetProgramInfoLog(program, 512, NULL, log);
     std::cout << "Linking program fail!\n" << log << std::endl;
   }
-  /*glDeleteShader(vertexShader);
-  glDeleteShader(fragmentShader);*/
+  glDeleteShader(shader_v);
+  glDeleteShader(shader_f);
 }
 
-void Dicom_render::VAO_VBO_init()
+void Render::compile_programs()
+{
+  compile_program(program_2d, shader_v_2d, shader_f_2d);
+  compile_program(program_3d, shader_v_3d, shader_f_3d);
+}
+
+void Render::VAO_VBO_init()
 {
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
@@ -170,69 +171,7 @@ void Dicom_render::VAO_VBO_init()
   glBindVertexArray(0); // Unbind VAO
 }
 
-/*void Dicom_render::gen_tex()
-{
-  int width = dicom_reader->get_width();
-  int height = dicom_reader->get_height();
-  int length = dicom_reader->get_length();
-  GLuint* image = new GLuint[width * height];
-
-  // очень тяжёлый алгоритм, обязателен к оптимизации
-  int li, rx, ry, rz, sx, sy, sz, px, py, pz;
-  for(int iy = 0; iy < height; iy++) {
-    for(int ix = 0; ix < width; ix++) {
-      li = iy * width + ix;
-
-      sx = width / 2;
-      sy = height / 2;
-      sz = length / 2;
-
-      rx = ix + x - sx;
-      ry = iy + y - sy;
-      rz = z      - sz;
-
-      // angle_xy
-      px = rx; py = ry;
-      rx = px * cos(angle_xy) - py * sin(angle_xy);
-      ry = px * sin(angle_xy) + py * cos(angle_xy);
-
-      // angle_xz
-      px = rx; pz = rz;
-      rx = px * cos(angle_xz) + pz * sin(angle_xz);
-      rz = -px* sin(angle_xz) + pz * cos(angle_xz);
-
-      // angle_yz
-      py = ry; pz = rz;
-      ry = py * cos(angle_yz) - pz * sin(angle_yz);
-      rz = py * sin(angle_yz) + pz * cos(angle_yz);
-
-      rx += sx;
-      ry += sy;
-      rz += sz;
-
-      if (rx > width || rx < 0 // x
-          || rz >= length || rz < 0 // z
-          || ry > height || ry < 0) { // y
-        image[li] = 0;
-      } else {
-        image[li] = dicom_reader->image_3d[rz * width * height + ry * width + rx];
-      }
-    }
-  }
-
-  //glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // что это?
-
-  glGenTextures(1, &tex);
-  glBindTexture(GL_TEXTURE_2D, tex);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
-      GL_LUMINANCE, GL_UNSIGNED_INT, image);
-}*/
-
-void Dicom_render::gen_tex_3d()
+void Render::gen_tex_3d()
 {
   glGenTextures(1, &tex_3d);
   glBindTexture(GL_TEXTURE_3D, tex_3d);
@@ -248,19 +187,53 @@ void Dicom_render::gen_tex_3d()
       GL_UNSIGNED_INT, dicom_reader->image_3d);
 }
 
-void Dicom_render::draw()
+void Render::draw()
 {
-  static GLuint texMove_location = glGetUniformLocation(program, "texOffset");
-  static GLuint texRotate_location = glGetUniformLocation(program, "texRotate");
+  switch(rendering) {
+    case e_rendering::rendering_2d:
+      draw_2d();
+      break;
+    case e_rendering::rendering_3d:
+      draw_3d();
+      break;
+  }
+}
+
+void Render::draw_2d()
+{
+  static GLuint texMove_location = glGetUniformLocation(program_2d,
+      "texOffset");
+  static GLuint texRotate_location = glGetUniformLocation(program_2d,
+      "texRotate");
 
   glBindTexture(GL_TEXTURE_3D, tex_3d);
-  glUseProgram(program);
+  glUseProgram(program_2d);
   glUniform3f(texMove_location, (float)x / width, (float)y / height, 
       (float)z / length);
   glUniform3f(texRotate_location, angle_xy / 180.0f * M_PI,
       angle_yz / 180.0f * M_PI, angle_xz / 180.0f * M_PI);
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  glBindVertexArray(0);
+}
+
+void Render::draw_3d()
+{
+  static GLuint texMove_location = glGetUniformLocation(program_3d,
+      "texOffset");
+  static GLuint texRotate_location = glGetUniformLocation(program_3d,
+      "texRotate");
+
+  glBindTexture(GL_TEXTURE_3D, tex_3d);
+  glUseProgram(program_3d);
+  glBindVertexArray(VAO);
+  for(int i = length - 1; i >= z; i--) {
+    glUniform3f(texMove_location, (float)x / width, (float)y / height, 
+        (float)i / length);
+    glUniform3f(texRotate_location, angle_xy / 180.0f * M_PI,
+        angle_yz / 180.0f * M_PI, angle_xz / 180.0f * M_PI);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  }
   glBindVertexArray(0);
 }
 
