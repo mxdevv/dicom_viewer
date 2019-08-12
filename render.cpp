@@ -223,17 +223,18 @@ void Render::draw_3d()
       "texOffset");
   static GLuint texRotate_location = glGetUniformLocation(program_3d,
       "texRotate");
+  static GLuint quality_location = glGetUniformLocation(program_3d,
+      "quality");
 
   glBindTexture(GL_TEXTURE_3D, tex_3d);
   glUseProgram(program_3d);
   glBindVertexArray(VAO);
-  for(int i = length - 1; i >= z; i--) {
-    glUniform3f(texMove_location, (float)x / width, (float)y / height, 
-        (float)i / length);
-    glUniform3f(texRotate_location, angle_xy / 180.0f * M_PI,
-        angle_yz / 180.0f * M_PI, angle_xz / 180.0f * M_PI);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  }
+  glUniform1f(quality_location, 1.0f / length);
+  glUniform3f(texMove_location, (float)x / width, (float)y / height, 
+      (float)z / length);
+  glUniform3f(texRotate_location, angle_xy / 180.0f * M_PI,
+      angle_yz / 180.0f * M_PI, angle_xz / 180.0f * M_PI);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);
 }
 
