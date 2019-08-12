@@ -3,6 +3,7 @@
 
 #include "dicom_reader.h"
 #include "app.h"
+#include "shader.cpp"
 
 class Render : public wxGLCanvas
 {
@@ -12,10 +13,13 @@ class Render : public wxGLCanvas
 
   wxGLContext* gl_context;
   Dicom_reader* dicom_reader;
-  GLuint tex, tex_3d;
 
+  GLuint tex, tex_3d;
   GLuint program_2d, program_3d;
-  GLuint shader_v_2d, shader_f_2d, shader_v_3d, shader_f_3d;
+  Shader vertex_2d_shader, fragment_2d_shader, vertex_3d_shader,
+      fragment_3d_shader;
+  GLuint VBO, VAO, EBO;
+
   GLfloat vertices[36] = {
       // Positions         // Colors          // Texture Coords
        1.0f,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f, 0.0f, // Top Right
@@ -27,109 +31,6 @@ class Render : public wxGLCanvas
     0, 1, 3, // First Triangle
     1, 2, 3  // Second Triangle
   };
-  GLuint VBO, VAO, EBO;
-
-  const GLchar* shader_v_2d_text =
-      "#version 330 core\n"
-      "layout (location = 0) in vec3 position;\n"
-      "layout (location = 1) in vec3 color;\n"
-      "layout (location = 2) in vec3 texCoord;\n"
-      "\n"
-      "out vec3 ourColor;\n"
-      "out vec3 TexCoord;\n"
-      "\n"
-      "void main()\n"
-      "{\n"
-      "  gl_Position = vec4(position, 1.0f);\n"
-      "  ourColor = color;\n"
-      "  TexCoord = texCoord;\n"
-      "}\0";
-
-  const GLchar* shader_f_2d_text =
-      "#version 330 core\n"
-      "in vec3 ourColor;\n"
-      "in vec3 TexCoord;\n"
-      "\n"
-      "out vec4 color;\n"
-      "\n"
-      "uniform sampler3D ourTexture;\n"
-      "uniform vec3 texOffset;\n"
-      "uniform vec3 texRotate;\n"
-      "vec3 coord;\n"
-      "vec3 tmp;\n"
-      "\n"
-      "void main()\n"
-      "{\n"
-      "  coord = TexCoord + texOffset - 0.5f;\n"
-      "  tmp = coord;\n"
-      "  coord.x = tmp.x * cos(texRotate[0]) - tmp.y * sin(texRotate[0]);\n"
-      "  coord.y = tmp.x * sin(texRotate[0]) + tmp.y * cos(texRotate[0]);\n"
-      "  tmp = coord;\n"
-      "  coord.x = tmp.x * cos(texRotate[2]) + tmp.z * sin(texRotate[2]);\n"
-      "  coord.z = tmp.x * -sin(texRotate[2]) + tmp.z * cos(texRotate[2]);\n"
-      "  tmp = coord;\n"
-      "  coord.y = tmp.y * cos(texRotate[1]) - tmp.z * sin(texRotate[1]);\n"
-      "  coord.z = tmp.y * sin(texRotate[1]) + tmp.z * cos(texRotate[1]);\n"
-      "  coord += 0.5f;\n"
-      "  color = texture(ourTexture, coord);\n"
-      "  color.a -= 1.0f - color.r;\n"
-      "}\0";
-
-  const GLchar* shader_v_3d_text =
-      "#version 330 core\n"
-      "layout (location = 0) in vec3 position;\n"
-      "layout (location = 1) in vec3 color;\n"
-      "layout (location = 2) in vec3 texCoord;\n"
-      "\n"
-      "out vec3 ourColor;\n"
-      "out vec3 TexCoord;\n"
-      "\n"
-      "void main()\n"
-      "{\n"
-      "  gl_Position = vec4(position, 1.0f);\n"
-      "  ourColor = color;\n"
-      "  TexCoord = texCoord;\n"
-      "}\0";
-
-  const GLchar* shader_f_3d_text =
-      "#version 330 core\n"
-      "in vec3 ourColor;\n"
-      "in vec3 TexCoord;\n"
-      "\n"
-      "out vec4 color;\n"
-      "vec4 tmpColor;\n"
-      "\n"
-      "uniform sampler3D ourTexture;\n"
-      "uniform vec3 texOffset;\n"
-      "vec3 offs;\n"
-      "uniform vec3 texRotate;\n"
-      "uniform float quality;\n"
-      "vec3 coord;\n"
-      "vec3 tmp;\n"
-      "\n"
-      "void main()\n"
-      "{\n"
-      "  color.r = 0.0f; color.g = 0.0f; color.b = 0.0f; color.a = 0.0f;\n"
-      "  offs = texOffset;\n"
-      "  for(float i = 1.0f; i >= texOffset.z; i -= quality) {\n"
-      "    offs.z = i;\n"
-      "    coord = TexCoord + offs - 0.5f;\n"
-      "    tmp = coord;\n"
-      "    coord.x = tmp.x * cos(texRotate[0]) - tmp.y * sin(texRotate[0]);\n"
-      "    coord.y = tmp.x * sin(texRotate[0]) + tmp.y * cos(texRotate[0]);\n"
-      "    tmp = coord;\n"
-      "    coord.x = tmp.x * cos(texRotate[2]) + tmp.z * sin(texRotate[2]);\n"
-      "    coord.z = tmp.x * -sin(texRotate[2]) + tmp.z * cos(texRotate[2]);\n"
-      "    tmp = coord;\n"
-      "    coord.y = tmp.y * cos(texRotate[1]) - tmp.z * sin(texRotate[1]);\n"
-      "    coord.z = tmp.y * sin(texRotate[1]) + tmp.z * cos(texRotate[1]);\n"
-      "    coord += 0.5f;\n"
-      "    tmpColor = texture(ourTexture, coord);\n"
-      "    tmpColor.a = tmpColor.r;\n"
-      "    color.rgb = mix(color.rgb, tmpColor.rgb, tmpColor.a);\n"
-      "  }\n"
-      "  color.a = 1.0f;\n"
-      "}\0";
 
 public:
   enum class e_rendering { rendering_2d, rendering_3d };
@@ -147,8 +48,6 @@ public:
 
   void init();
 
-  void compile_shader(GLuint& shader, GLuint SHADER_TYPE,
-      const GLchar* shader_text);
   void compile_shaders();
   void compile_program(GLuint& program, const GLuint shader_v,
       const GLuint shader_f);

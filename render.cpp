@@ -2,6 +2,7 @@
 #define __RENDER_CPP__
 
 #include "render.h"
+#include "shader_sources.h"
 
 Render::Render(wxFrame* parent, int* args,
     Dicom_reader* dicom_reader)
@@ -91,28 +92,12 @@ void Render::render(wxPaintEvent& evt)
   Refresh();
 }
 
-void Render::compile_shader(GLuint& shader, GLuint SHADER_TYPE,
-    const GLchar* shader_text)
-{
-  shader = glCreateShader(SHADER_TYPE);
-  glShaderSource(shader, 1, &shader_text, NULL);
-  glCompileShader(shader);
-
-  GLint success;
-  GLchar log[512];
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(shader, 512, NULL, log);
-    std::cerr << "Shader compilation error!\n" << log << std::endl;
-  }
-}
-
 void Render::compile_shaders()
 {
-  compile_shader(shader_v_2d, GL_VERTEX_SHADER, shader_v_2d_text);
-  compile_shader(shader_f_2d, GL_FRAGMENT_SHADER, shader_f_2d_text);
-  compile_shader(shader_v_3d, GL_VERTEX_SHADER, shader_v_3d_text);
-  compile_shader(shader_f_3d, GL_FRAGMENT_SHADER, shader_f_3d_text);
+  vertex_2d_shader.create(shader_sources::vertex_2d, GL_VERTEX_SHADER);
+  fragment_2d_shader.create(shader_sources::fragment_2d, GL_FRAGMENT_SHADER);
+  vertex_3d_shader.create(shader_sources::vertex_3d, GL_VERTEX_SHADER);
+  fragment_3d_shader.create(shader_sources::fragment_3d, GL_FRAGMENT_SHADER);
 }
 
 void Render::compile_program(GLuint& program, const GLuint shader_v,
@@ -136,8 +121,8 @@ void Render::compile_program(GLuint& program, const GLuint shader_v,
 
 void Render::compile_programs()
 {
-  compile_program(program_2d, shader_v_2d, shader_f_2d);
-  compile_program(program_3d, shader_v_3d, shader_f_3d);
+  compile_program(program_2d, vertex_2d_shader.get(), fragment_2d_shader.get());
+  compile_program(program_3d, vertex_3d_shader.get(), fragment_3d_shader.get());
 }
 
 void Render::VAO_VBO_init()
