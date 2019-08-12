@@ -208,7 +208,7 @@ bool App::OnInit()
   render->init();
   render->compile_shaders();
   render->compile_programs();
-  render->VAO_VBO_init();
+  render->texture_render.init();
   render->gen_tex_3d();
 
   return true;

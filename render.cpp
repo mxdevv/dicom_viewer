@@ -45,13 +45,8 @@ void Render::init()
   glDisable(GL_POLYGON_SMOOTH);
   glDisable(GL_LINE_SMOOTH);
   glEnable(GL_MULTISAMPLE);
-  glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
+  glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);*/
 
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  gluOrtho2D(0.0f, 1.0f, 0.0f, 1.0f);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();*/
   glViewport(0, 0, getWidth(), getHeight());
 
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -103,39 +98,8 @@ void Render::compile_shaders()
 
 void Render::compile_programs()
 {
-  prg_2d.create(&vertex_2d_shader, nullptr, &fragment_2d_shader);
-  prg_3d.create(&vertex_3d_shader, nullptr, &fragment_3d_shader);
-}
-
-void Render::VAO_VBO_init()
-{
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glGenBuffers(1, &EBO);
-
-  glBindVertexArray(VAO);
-
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-      GL_STATIC_DRAW);
-
-  // Position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat),
-      (GLvoid*)0);
-  glEnableVertexAttribArray(0);
-  // Color attribute
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat),
-      (GLvoid*)(3 * sizeof(GLfloat)));
-  glEnableVertexAttribArray(1);
-  // TexCoord attribute
-  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat),
-      (GLvoid*)(6 * sizeof(GLfloat)));
-  glEnableVertexAttribArray(2);
-
-  glBindVertexArray(0); // Unbind VAO
+  program_2d.create(&vertex_2d_shader, nullptr, &fragment_2d_shader);
+  program_3d.create(&vertex_3d_shader, nullptr, &fragment_3d_shader);
 }
 
 void Render::gen_tex_3d()
@@ -168,41 +132,37 @@ void Render::draw()
 
 void Render::draw_2d()
 {
-  static GLuint texMove_location = glGetUniformLocation(prg_2d.get(),
+  static GLuint texMove_location = glGetUniformLocation(program_2d.get(),
       "texOffset");
-  static GLuint texRotate_location = glGetUniformLocation(prg_2d.get(),
+  static GLuint texRotate_location = glGetUniformLocation(program_2d.get(),
       "texRotate");
 
   glBindTexture(GL_TEXTURE_3D, tex_3d);
-  prg_2d.run();
+  program_2d.run();
   glUniform3f(texMove_location, (float)x / width, (float)y / height, 
       (float)z / length);
   glUniform3f(texRotate_location, angle_xy / 180.0f * M_PI,
       angle_yz / 180.0f * M_PI, angle_xz / 180.0f * M_PI);
-  glBindVertexArray(VAO);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  glBindVertexArray(0);
+  texture_render.draw();
 }
 
 void Render::draw_3d()
 {
-  static GLuint texMove_location = glGetUniformLocation(prg_3d.get(),
+  static GLuint texMove_location = glGetUniformLocation(program_3d.get(),
       "texOffset");
-  static GLuint texRotate_location = glGetUniformLocation(prg_3d.get(),
+  static GLuint texRotate_location = glGetUniformLocation(program_3d.get(),
       "texRotate");
-  static GLuint quality_location = glGetUniformLocation(prg_3d.get(),
+  static GLuint quality_location = glGetUniformLocation(program_3d.get(),
       "quality");
 
   glBindTexture(GL_TEXTURE_3D, tex_3d);
-  prg_3d.run();
-  glBindVertexArray(VAO);
+  program_3d.run();
   glUniform1f(quality_location, 1.0f / length);
   glUniform3f(texMove_location, (float)x / width, (float)y / height, 
       (float)z / length);
   glUniform3f(texRotate_location, angle_xy / 180.0f * M_PI,
       angle_yz / 180.0f * M_PI, angle_xz / 180.0f * M_PI);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  glBindVertexArray(0);
+  texture_render.draw();
 }
 
 #endif
