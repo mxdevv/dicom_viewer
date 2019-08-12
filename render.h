@@ -4,6 +4,7 @@
 #include "dicom_reader.h"
 #include "app.h"
 #include "shader.cpp"
+#include "program.cpp"
 
 class Render : public wxGLCanvas
 {
@@ -15,9 +16,9 @@ class Render : public wxGLCanvas
   Dicom_reader* dicom_reader;
 
   GLuint tex, tex_3d;
-  GLuint program_2d, program_3d;
   Shader vertex_2d_shader, fragment_2d_shader, vertex_3d_shader,
       fragment_3d_shader;
+  Program prg_2d, prg_3d;
   GLuint VBO, VAO, EBO;
 
   GLfloat vertices[36] = {
@@ -49,8 +50,6 @@ public:
   void init();
 
   void compile_shaders();
-  void compile_program(GLuint& program, const GLuint shader_v,
-      const GLuint shader_f);
   void compile_programs();
   void VAO_VBO_init();
   void load_test_texture();

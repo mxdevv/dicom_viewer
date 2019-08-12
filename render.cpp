@@ -4,8 +4,7 @@
 #include "render.h"
 #include "shader_sources.h"
 
-Render::Render(wxFrame* parent, int* args,
-    Dicom_reader* dicom_reader)
+Render::Render(wxFrame* parent, int* args, Dicom_reader* dicom_reader)
   : wxGLCanvas(parent, wxID_ANY, args, wxDefaultPosition, wxDefaultSize,
                wxFULL_REPAINT_ON_RESIZE), dicom_reader(dicom_reader)
 {
@@ -94,35 +93,18 @@ void Render::render(wxPaintEvent& evt)
 
 void Render::compile_shaders()
 {
-  vertex_2d_shader.create(shader_sources::vertex_2d, GL_VERTEX_SHADER);
-  fragment_2d_shader.create(shader_sources::fragment_2d, GL_FRAGMENT_SHADER);
-  vertex_3d_shader.create(shader_sources::vertex_3d, GL_VERTEX_SHADER);
-  fragment_3d_shader.create(shader_sources::fragment_3d, GL_FRAGMENT_SHADER);
-}
-
-void Render::compile_program(GLuint& program, const GLuint shader_v,
-    const GLuint shader_f)
-{
-  program = glCreateProgram();
-  glAttachShader(program, shader_v);
-  glAttachShader(program, shader_f);
-  glLinkProgram(program);
-
-  GLint success;
-  GLchar log[512];
-  glGetProgramiv(program, GL_LINK_STATUS, &success);
-  if (!success) {
-    glGetProgramInfoLog(program, 512, NULL, log);
-    std::cout << "Linking program fail!\n" << log << std::endl;
-  }
-  glDeleteShader(shader_v);
-  glDeleteShader(shader_f);
+  vertex_2d_shader.create(shader_sources::vertex_2d, Shader::e_type::vertex);
+  fragment_2d_shader.create(shader_sources::fragment_2d,
+      Shader::e_type::fragment);
+  vertex_3d_shader.create(shader_sources::vertex_3d, Shader::e_type::vertex);
+  fragment_3d_shader.create(shader_sources::fragment_3d,
+      Shader::e_type::fragment);
 }
 
 void Render::compile_programs()
 {
-  compile_program(program_2d, vertex_2d_shader.get(), fragment_2d_shader.get());
-  compile_program(program_3d, vertex_3d_shader.get(), fragment_3d_shader.get());
+  prg_2d.create(&vertex_2d_shader, nullptr, &fragment_2d_shader);
+  prg_3d.create(&vertex_3d_shader, nullptr, &fragment_3d_shader);
 }
 
 void Render::VAO_VBO_init()
@@ -186,13 +168,13 @@ void Render::draw()
 
 void Render::draw_2d()
 {
-  static GLuint texMove_location = glGetUniformLocation(program_2d,
+  static GLuint texMove_location = glGetUniformLocation(prg_2d.get(),
       "texOffset");
-  static GLuint texRotate_location = glGetUniformLocation(program_2d,
+  static GLuint texRotate_location = glGetUniformLocation(prg_2d.get(),
       "texRotate");
 
   glBindTexture(GL_TEXTURE_3D, tex_3d);
-  glUseProgram(program_2d);
+  prg_2d.run();
   glUniform3f(texMove_location, (float)x / width, (float)y / height, 
       (float)z / length);
   glUniform3f(texRotate_location, angle_xy / 180.0f * M_PI,
@@ -204,15 +186,15 @@ void Render::draw_2d()
 
 void Render::draw_3d()
 {
-  static GLuint texMove_location = glGetUniformLocation(program_3d,
+  static GLuint texMove_location = glGetUniformLocation(prg_3d.get(),
       "texOffset");
-  static GLuint texRotate_location = glGetUniformLocation(program_3d,
+  static GLuint texRotate_location = glGetUniformLocation(prg_3d.get(),
       "texRotate");
-  static GLuint quality_location = glGetUniformLocation(program_3d,
+  static GLuint quality_location = glGetUniformLocation(prg_3d.get(),
       "quality");
 
   glBindTexture(GL_TEXTURE_3D, tex_3d);
-  glUseProgram(program_3d);
+  prg_3d.run();
   glBindVertexArray(VAO);
   glUniform1f(quality_location, 1.0f / length);
   glUniform3f(texMove_location, (float)x / width, (float)y / height, 

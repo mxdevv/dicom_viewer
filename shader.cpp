@@ -5,7 +5,7 @@
 
 void Shader::compile()
 {
-  shader = glCreateShader(shader_type);
+  shader = glCreateShader(static_cast<GLuint>(shader_type));
   glShaderSource(shader, 1, &shader_source, NULL);
   glCompileShader(shader);
 
@@ -21,13 +21,13 @@ void Shader::compile()
 Shader::Shader()
   { }
 
-Shader::Shader(const GLchar* shader_source, GLuint shader_type)
+Shader::Shader(const GLchar* shader_source, e_type shader_type)
   : shader_source(shader_source), shader_type(shader_type)
 {
   compile();
 }
 
-void Shader::create(const GLchar* shader_source, GLuint shader_type)
+void Shader::create(const GLchar* shader_source, e_type shader_type)
 {
   if (shader != -1) {
     throw recreation_exception();
@@ -47,7 +47,7 @@ const GLuint Shader::get()
   return shader;
 }
 
-const GLuint Shader::get_type()
+const Shader::e_type Shader::get_type()
 {
   if (shader_source == nullptr) {
     throw no_shader_source_exception();
