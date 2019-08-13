@@ -36,9 +36,9 @@ void Render::init()
 
   glewInit();
 
-  glEnable(GL_BLEND);
+  /*glEnable(GL_BLEND);
   glDisable(GL_DEPTH_TEST);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);*/
 
   /*glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
   glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
@@ -49,7 +49,7 @@ void Render::init()
 
   glViewport(0, 0, getWidth(), getHeight());
 
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glClearColor(0.0f, 0.2f, 0.0f, 0.0f);
 }
 
 void Render::resized(wxSizeEvent& evt)
@@ -112,10 +112,10 @@ void Render::gen_tex_3d()
   glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
   float borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-  glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, dicom_reader->get_width(),
-      dicom_reader->get_height(), dicom_reader->get_length(), 0, GL_LUMINANCE,
-      GL_UNSIGNED_INT, dicom_reader->image_3d);
+  glTexParameterfv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, borderColor);
+  glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, dicom_reader->get_width(),
+      dicom_reader->get_height(), dicom_reader->get_length(), 0, GL_RGBA,
+      GL_UNSIGNED_BYTE, dicom_reader->image_3d);
 }
 
 void Render::draw()
